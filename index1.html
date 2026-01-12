@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Vocacional Interativo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .option-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+        
+        /* Cores Personalizadas */
+        .bg-brand-blue { background-color: #0D134C; }
+        .text-brand-blue { color: #0D134C; }
+        .border-brand-blue { border-color: #0D134C; }
+        
+        .bg-brand-red { background-color: #DD303E; }
+        .text-brand-red { color: #DD303E; }
+        .border-brand-red { border-color: #DD303E; }
+        
+        .hover\:bg-brand-red-dark:hover { background-color: #b91c29; }
+        .hover\:text-brand-red-dark:hover { color: #b91c29; }
+        .hover\:border-brand-red:hover { border-color: #DD303E; }
+        .hover\:border-brand-blue:hover { border-color: #0D134C; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Container Principal -->
+    <div id="app" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden min-h-[600px] flex flex-col relative border-t-4 border-brand-red">
+        
+        <!-- Barra de Progresso -->
+        <div id="progress-container" class="w-full bg-slate-100 h-2 hidden">
+            <div id="progress-bar" class="bg-brand-red h-2 transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <!-- Conteúdo Dinâmico -->
+        <div id="content" class="flex-1 flex flex-col p-8 md:p-10 justify-center">
+            
+            <!-- Tela Inicial -->
+            <div id="start-screen" class="text-center space-y-6 fade-in">
+                <div class="inline-block p-4 bg-slate-50 rounded-full mb-4 shadow-sm">
+                    <!-- Ícone em Vermelho para Destaque -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-brand-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                </div>
+                <!-- Título em Azul Escuro para Estrutura -->
+                <h1 class="text-3xl md:text-4xl font-bold text-brand-blue">Descubra Seu Caminho Profissional</h1>
+                <p class="text-lg text-slate-600 leading-relaxed">
+                    Este teste interativo vai mapear seu perfil comportamental e indicar as melhores áreas no <strong>mercado privado</strong> e em <strong>concursos públicos</strong>.
+                </p>
+                <div class="space-y-2 text-sm text-brand-blue bg-blue-50/50 p-4 rounded-lg text-left inline-block border border-blue-100">
+                    <p><span class="text-brand-red font-bold">⏱️</span> Duração: 2 a 3 minutos</p>
+                    <p><span class="text-brand-red font-bold">🎯</span> Perguntas: 12 questões rápidas</p>
+                    <p><span class="text-brand-red font-bold">💡</span> Resultado: Imediato e detalhado</p>
+                </div>
+                <br>
+                <!-- Botão Primário em Vermelho -->
+                <button onclick="startTest()" class="mt-8 bg-brand-red hover:bg-brand-red-dark text-white font-bold py-4 px-10 rounded-xl text-lg transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    Começar Teste
+                </button>
+            </div>
+
+            <!-- Tela de Pergunta -->
+            <div id="quiz-screen" class="hidden flex-col h-full fade-in">
+                <div class="mb-8">
+                    <span id="question-number" class="text-sm font-bold text-brand-red tracking-wider uppercase">PERGUNTA 1 DE 12</span>
+                    <h2 id="question-text" class="text-2xl font-bold text-brand-blue mt-2 leading-snug"></h2>
+                </div>
+                
+                <div id="options-container" class="space-y-3 flex-1">
+                    <!-- Opções geradas via JS -->
+                </div>
+            </div>
+
+            <!-- Tela de Carregando (Cálculo) -->
+            <div id="loading-screen" class="hidden text-center items-center justify-center flex-col h-full fade-in">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-brand-red mb-6"></div>
+                <h2 class="text-2xl font-bold text-brand-blue">Analisando seu perfil...</h2>
+                <p class="text-slate-500 mt-2">Cruzando dados de carreira e comportamento.</p>
+            </div>
+
+            <!-- Tela de Resultado (Perfil Único) -->
+            <div id="result-screen" class="hidden fade-in space-y-6">
+                <!-- Cabeçalho do Resultado -->
+                <div class="border-b border-slate-200 pb-6">
+                    <span class="inline-block px-3 py-1 bg-blue-50 text-brand-blue rounded-full text-xs font-bold tracking-wide uppercase mb-3 border border-blue-100">Seu Perfil Predominante</span>
+                    <h2 id="result-title" class="text-3xl md:text-4xl font-bold text-brand-blue mb-2"></h2>
+                    <p id="result-desc" class="text-lg text-slate-600 leading-relaxed"></p>
+                </div>
+
+                <!-- Seções de Detalhes -->
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Pontos Fortes -->
+                    <div class="bg-green-50 p-5 rounded-xl border border-green-100">
+                        <h3 class="font-bold text-green-800 mb-3 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Pontos Fortes
+                        </h3>
+                        <ul id="result-strengths" class="space-y-2 text-sm text-green-800 list-disc list-inside"></ul>
+                    </div>
+                    <!-- Pontos de Atenção -->
+                    <div class="bg-amber-50 p-5 rounded-xl border border-amber-100">
+                        <h3 class="font-bold text-amber-800 mb-3 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Pontos de Atenção
+                        </h3>
+                        <ul id="result-risks" class="space-y-2 text-sm text-amber-900 list-disc list-inside"></ul>
+                    </div>
+                </div>
+
+                <!-- Sugestões de Carreira -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold text-brand-blue border-l-4 border-brand-red pl-3">Onde você pode brilhar?</h3>
+                    
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="bg-white border border-slate-200 p-5 rounded-xl shadow-sm hover:border-brand-blue transition-colors">
+                            <h4 class="font-bold text-brand-red mb-3 uppercase text-xs tracking-wider">Mercado Privado</h4>
+                            <ul id="result-private" class="space-y-2 text-sm text-slate-600 list-disc list-inside"></ul>
+                        </div>
+                        <div class="bg-white border border-slate-200 p-5 rounded-xl shadow-sm hover:border-brand-blue transition-colors">
+                            <h4 class="font-bold text-brand-red mb-3 uppercase text-xs tracking-wider">Concursos Públicos</h4>
+                            <ul id="result-public" class="space-y-2 text-sm text-slate-600 list-disc list-inside"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Próximos Passos -->
+                 <div class="bg-brand-blue text-white p-6 rounded-xl mt-6 shadow-lg">
+                    <h3 class="text-lg font-bold mb-3 flex items-center text-white">
+                        <svg class="w-5 h-5 mr-2 text-brand-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Próximos Passos
+                    </h3>
+                    <ul id="result-steps" class="space-y-2 text-slate-200 text-sm list-decimal list-inside"></ul>
+                </div>
+
+                <!-- CTA GRAN (perfil único) -->
+                <div id="gran-cta" class="bg-slate-50 border border-slate-200 p-6 rounded-xl mt-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-brand-blue mb-1">Seu próximo passo no Gran</h3>
+                        <p id="gran-cta-text" class="text-slate-600 mb-4 text-sm"></p>
+                    </div>
+
+                    <div class="grid sm:grid-cols-2 gap-3">
+                        <!-- Botão Graduação -->
+                        <a id="gran-btn-fac" href="#" target="_blank" class="flex flex-col items-center justify-center bg-brand-red hover:bg-brand-red-dark text-white p-3 rounded-lg transition-all text-center group h-full shadow-md hover:shadow-lg hover:-translate-y-0.5">
+                            <span class="text-xs uppercase tracking-wide opacity-80 mb-1">Graduação Recomendada</span>
+                            <span id="gran-label-fac" class="font-bold text-sm md:text-base leading-tight">Ver Opções no Gran</span>
+                        </a>
+
+                        <!-- Botão Concursos -->
+                        <a id="gran-btn-prep" href="#" target="_blank" class="flex flex-col items-center justify-center bg-white border-2 border-slate-200 hover:border-brand-blue text-brand-blue p-3 rounded-lg transition-all text-center h-full hover:bg-slate-50">
+                            <span class="text-xs uppercase tracking-wide opacity-70 mb-1 text-slate-500">Concursos na Área</span>
+                            <span id="gran-label-prep" class="font-bold text-sm md:text-base leading-tight">Ir para o Gran Cursos</span>
+                        </a>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                         <a href="https://pos.grancursosonline.com.br/" target="_blank" class="text-xs text-brand-blue hover:text-brand-red underline transition-colors">
+                            Ver também opções de Pós-Graduação (Gran Faculdade)
+                        </a>
+                    </div>
+                </div>
+
+                <div class="text-center pt-6">
+                    <button onclick="location.reload()" class="text-brand-blue font-semibold hover:text-brand-red transition-colors text-sm">
+                        Refazer Teste
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tela de Resultado Misto -->
+            <div id="mixed-result-screen" class="hidden fade-in space-y-6">
+                <!-- Gradiente Azul Escuro -->
+                <div class="bg-gradient-to-r from-[#0D134C] to-[#1a237e] text-white p-8 rounded-2xl shadow-lg text-center border-b-4 border-brand-red">
+                    <h2 class="text-3xl font-bold mb-2">Perfil Misto Identificado!</h2>
+                    <h3 id="mixed-title" class="text-2xl font-light mb-4 text-slate-200"></h3>
+                    <p id="mixed-desc" class="text-slate-300 leading-relaxed"></p>
+                </div>
+
+                <div class="grid md:grid-cols-1 gap-4">
+                    <div class="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
+                        <h4 class="font-bold text-brand-red mb-4 uppercase tracking-wide text-sm">💡 Sugestões Combinadas</h4>
+                        <p id="mixed-suggestions" class="text-slate-600 mb-4"></p>
+                        <div class="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                            <p class="font-bold text-brand-blue text-sm mb-1">Dica de Ouro:</p>
+                            <p id="mixed-tip" class="text-slate-600 text-sm italic"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CTA GRAN (perfil misto) -->
+                <div class="bg-slate-50 border border-slate-200 p-6 rounded-xl shadow-sm mt-4">
+                    <h4 class="font-bold text-brand-blue mb-2">Recomendação no Gran</h4>
+                    <p id="gran-mixed-text" class="text-slate-600 mb-4 text-sm"></p>
+
+                     <div class="grid sm:grid-cols-2 gap-3">
+                        <!-- Botão Graduação -->
+                        <a id="gran-mixed-btn-fac" href="#" target="_blank" class="flex flex-col items-center justify-center bg-brand-red hover:bg-brand-red-dark text-white p-3 rounded-lg transition-all text-center h-full shadow-md hover:shadow-lg">
+                            <span class="text-xs uppercase tracking-wide opacity-80 mb-1">Graduação Recomendada</span>
+                            <span id="gran-mixed-label-fac" class="font-bold text-sm md:text-base leading-tight">Ver Opções no Gran</span>
+                        </a>
+
+                        <!-- Botão Concursos -->
+                        <a id="gran-mixed-btn-prep" href="#" target="_blank" class="flex flex-col items-center justify-center bg-white border-2 border-slate-200 hover:border-brand-blue text-brand-blue p-3 rounded-lg transition-all text-center h-full hover:bg-slate-50">
+                            <span class="text-xs uppercase tracking-wide opacity-70 mb-1 text-slate-500">Concursos na Área</span>
+                            <span id="gran-mixed-label-prep" class="font-bold text-sm md:text-base leading-tight">Ir para o Gran Cursos</span>
+                        </a>
+                    </div>
+                     <div class="text-center mt-3">
+                         <a href="https://pos.grancursosonline.com.br/" target="_blank" class="text-xs text-brand-blue hover:text-brand-red underline transition-colors">
+                            Ver também opções de Pós-Graduação (Gran Faculdade)
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="text-center pt-6">
+                    <button onclick="location.reload()" class="bg-white border border-slate-300 text-brand-blue hover:bg-slate-50 font-semibold py-3 px-8 rounded-lg transition-colors">
+                        Refazer Teste
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JavaScript com a Lógica e os Textos -->
+    <script>
+        // --- BASE DE DADOS: PERGUNTAS ---
+        const questions = [
+            {
+                text: "Em um projeto em grupo, qual papel você assume naturalmente?",
+                options: [
+                    { id: "A", text: "Organizo o cronograma, reviso os detalhes e garanto que nada foi esquecido." },
+                    { id: "B", text: "Cuido do clima da equipe, apresento as ideias e garanto que todos sejam ouvidos." },
+                    { id: "C", text: "Defino o objetivo final, tomo as decisões difíceis e divido as tarefas." },
+                    { id: "D", text: "Coloco a mão na massa imediatamente para ver o resultado acontecendo logo." }
+                ]
+            },
+            {
+                text: "O que mais te desmotiva no trabalho?",
+                options: [
+                    { id: "A", text: "Falta de regras claras, desorganização e mudanças sem lógica." },
+                    { id: "B", text: "Ambiente frio, isolamento social e falta de reconhecimento humano." },
+                    { id: "C", text: "Falta de desafios, sensação de estar estagnado e não ter autonomia." },
+                    { id: "D", text: "Excesso de reuniões teóricas que não levam a nenhuma ação prática." }
+                ]
+            },
+            {
+                text: "Se você pudesse escolher um superpoder profissional, qual seria?",
+                options: [
+                    { id: "A", text: "Precisão infalível: nunca cometer erros técnicos ou de cálculo." },
+                    { id: "B", text: "Carisma magnético: convencer e inspirar qualquer pessoa." },
+                    { id: "C", text: "Visão de futuro: prever tendências e estar sempre à frente." },
+                    { id: "D", text: "Velocidade máxima: resolver problemas complexos em tempo recorde." }
+                ]
+            },
+            {
+                text: "Diante de um problema urgente e inesperado, qual sua primeira reação?",
+                options: [
+                    { id: "A", text: "Paro, analiso os dados disponíveis e consulto as regras antes de agir." },
+                    { id: "B", text: "Converso com as pessoas envolvidas para entender o impacto e buscar ajuda." },
+                    { id: "C", text: "Assumo o comando, decido rápido o caminho a seguir e delego ações." },
+                    { id: "D", text: "Agarro o problema e resolvo na hora com os recursos à mão." }
+                ]
+            },
+            {
+                text: "Como você prefere que seja sua rotina de trabalho?",
+                options: [
+                    { id: "A", text: "Previsível, organizada e com processos bem definidos." },
+                    { id: "B", text: "Dinâmica, com muita interação, reuniões e troca de ideias." },
+                    { id: "C", text: "Desafiadora, com metas agressivas e possibilidade de crescimento rápido." },
+                    { id: "D", text: "Prática, focada em tarefas claras onde eu possa ver o início e o fim." }
+                ]
+            },
+            {
+                text: "Para você, o sucesso profissional significa:",
+                options: [
+                    { id: "A", text: "Ser reconhecido como um especialista técnico altamente confiável." },
+                    { id: "B", text: "Ser amado pela equipe e sentir que meu trabalho ajudou pessoas." },
+                    { id: "C", text: "Alcançar cargos de alto nível, poder e influência no mercado." },
+                    { id: "D", text: "Ser a pessoa que 'faz acontecer' e resolve o que ninguém mais consegue." }
+                ]
+            },
+            {
+                text: "Qual ambiente de trabalho parece mais atrativo para você?",
+                options: [
+                    { id: "A", text: "Um escritório silencioso, biblioteca ou laboratório bem equipado." },
+                    { id: "B", text: "Uma sala de co-working, atendimento ao público ou sala de aula." },
+                    { id: "C", text: "Uma sala de reuniões executiva, negociando grandes projetos." },
+                    { id: "D", text: "Em campo, visitando obras, operações ou trabalhando ao ar livre." }
+                ]
+            },
+            {
+                text: "Na hora de aprender algo novo, você prefere:",
+                options: [
+                    { id: "A", text: "Ler manuais, leis, tutoriais escritos e estudar a teoria a fundo." },
+                    { id: "B", text: "Discutir em grupos de estudo, assistir palestras e tirar dúvidas verbalmente." },
+                    { id: "C", text: "Entender o conceito geral e como isso vai me ajudar a crescer na carreira." },
+                    { id: "D", text: "Tentar fazer na prática, errar, consertar e aprender fazendo." }
+                ]
+            },
+            {
+                text: "Sobre regras e normas:",
+                options: [
+                    { id: "A", text: "São essenciais. Sem elas, vira bagunça. Eu sigo e fiscalizo." },
+                    { id: "B", text: "São importantes, mas podem ser flexibilizadas para ajudar alguém." },
+                    { id: "C", text: "São guias, mas se atrapalharem o resultado, eu proponho mudar." },
+                    { id: "D", text: "Sigo o necessário para fazer meu trabalho, mas prefiro a praticidade." }
+                ]
+            },
+            {
+                text: "O que te atrai na ideia de Concurso Público?",
+                options: [
+                    { id: "A", text: "A estabilidade, a previsão legal e a clareza das funções no edital." },
+                    { id: "B", text: "A possibilidade de servir à sociedade e ter contato com o cidadão." },
+                    { id: "C", text: "O status da carreira, o salário alto e o poder de decisão do cargo." },
+                    { id: "D", text: "A garantia de um emprego onde eu tenha tarefas claras e objetivas." }
+                ]
+            },
+            {
+                text: "E o que te atrai no Mercado Privado?",
+                options: [
+                    { id: "A", text: "A possibilidade de me especializar tecnicamente em nichos específicos." },
+                    { id: "B", text: "O networking, eventos e a cultura de equipe vibrante." },
+                    { id: "C", text: "A meritocracia, bônus por desempenho e escalar a hierarquia rápido." },
+                    { id: "D", text: "A agilidade, novas tecnologias e ver resultados concretos rapidamente." }
+                ]
+            },
+            {
+                text: "Como você lida com relatórios e documentação?",
+                options: [
+                    { id: "A", text: "Adoro. Faço detalhado, reviso duas vezes e deixo impecável." },
+                    { id: "B", text: "Faço, mas prefiro apresentar os resultados falando." },
+                    { id: "C", text: "Leio o resumo executivo para tomar decisões; detalhes eu delego." },
+                    { id: "D", text: "Faço o básico necessário para poder voltar ao trabalho prático." }
+                ]
+            }
+        ];
+
+        const tieBreakerQuestion = {
+            text: "Se você tivesse que abrir uma empresa hoje, qual seria seu foco principal?",
+            options: [
+                { id: "A", text: "Garantir que as finanças e a contabilidade estejam 100% perfeitas." },
+                { id: "B", text: "Criar uma marca incrível e atender muito bem os clientes." },
+                { id: "C", text: "Ser a maior do mercado e vencer a concorrência." },
+                { id: "D", text: "Ter o melhor produto/serviço e a produção mais eficiente." }
+            ]
+        };
+
+        // --- BASE DE DADOS: RESULTADOS ---
+        const profiles = {
+            A: {
+                title: "O Especialista (Analítico–Estruturado)",
+                desc: "Você é a âncora que mantém as coisas firmes. Seu perfil é movido por dados, fatos e segurança. Onde outros veem caos, você vê padrões. Você não gosta de “achismos” e prefere ambientes com regras claras.",
+                strengths: ["Atenção aos detalhes", "Foco e concentração", "Pensamento lógico", "Planejamento", "Confiabilidade"],
+                risks: ["Dificuldade com mudanças bruscas", "Perfeccionismo excessivo", "Pode parecer distante"],
+                private: ["Análise de Dados / BI", "Finanças e Controladoria", "Desenvolvimento (Back-end)", "Compliance e Auditoria", "Engenharia de Qualidade", "Direito Contratual"],
+                public: ["Área Fiscal (Auditoria)", "Área de Controle (TCU/TCE/CGU)", "Tribunais (área administrativa)", "Bancos Públicos", "Perícia Criminal", "Tecnologia da Informação"],
+                steps: ["Explore editais de áreas analíticas (controle/fiscal/tribunais).", "Fortaleça ferramentas: Excel/Power BI/SQL (conforme seu objetivo).", "Treine flexibilidade: simule imprevistos e revise decisões."]
+            },
+            B: {
+                title: "O Conector (Social–Comunicador)",
+                desc: "Você é a voz e o coração da equipe. Seu perfil é movido por pessoas e conexões. Você tem habilidade natural de “ler” o ambiente, mediar conflitos e criar pontes. Trabalhar isolado costuma ser bem desgastante.",
+                strengths: ["Comunicação fluida", "Inteligência emocional", "Negociação e persuasão", "Trabalho em equipe", "Adaptabilidade"],
+                risks: ["Dificuldade em dizer não", "Perda de foco com conversas", "Pode levar críticas para o lado pessoal"],
+                private: ["Recursos Humanos", "Marketing e Comunicação", "Vendas e Gestão de Contas", "Psicologia Organizacional", "Customer Success", "Educação Corporativa"],
+                public: ["Educação (docência/gestão)", "Saúde/Assistência (áreas sociais)", "Atendimento ao cidadão", "Conciliação e mediação", "Ministério Público (apoio)", "Diplomacia/rel. internacionais (perfil comunicador)"],
+                steps: ["Busque ambientes com interação e propósito claro.", "Treine gestão do tempo (blocos e prioridades).", "Desenvolva técnicas de comunicação estratégica (apresentação/argumentação)."]
+            },
+            C: {
+                title: "O Visionário (Estratégico–Líder)",
+                desc: "Você enxerga o jogo grande. Não gosta de ficar preso em minúcias operacionais: prefere definir direção, metas e estratégia. É movido por desafios, autonomia e crescimento — e tende a se destacar quando há responsabilidade real.",
+                strengths: ["Visão sistêmica", "Tomada de decisão", "Foco em metas", "Autonomia", "Capacidade de delegar"],
+                risks: ["Impaciência com processos lentos", "Pode atropelar detalhes", "Risco de soar autoritário"],
+                private: ["Gestão de Projetos/Produtos", "Empreendedorismo", "Programas de Trainee", "Direção Comercial", "Direito Corporativo", "Marketing Estratégico"],
+                public: ["Gestão Governamental", "Carreiras de decisão (alto nível)", "Agências Reguladoras", "Consultoria Legislativa", "Fiscal/Controle (com visão estratégica)", "Segurança pública (liderança)"],
+                steps: ["Escolha um objetivo macro e monte um plano de 6 a 12 meses.", "Treine consistência (rotina de execução diária).", "Cerque-se de indicadores: acompanhe desempenho e ajuste rota."]
+            },
+            D: {
+                title: "O Realizador (Operacional–Executor)",
+                desc: "Enquanto todos discutem, você já começou. Você é prático, resiliente e gosta de ver resultado. Seu perfil se destaca quando as tarefas são claras e há espaço para execução com autonomia e ritmo.",
+                strengths: ["Alta produtividade", "Pragmatismo", "Resiliência", "Habilidade técnica", "Senso de urgência"],
+                risks: ["Agir por impulso sem planejar", "Dificuldade com teoria abstrata", "Risco de sobrecarga"],
+                private: ["Logística e Operações", "Engenharia de Campo", "Tecnologia (Infra/Suporte)", "Eventos e Produção", "Agronegócio", "Saúde (rotina prática)"],
+                public: ["Carreiras Operacionais", "Forças de Segurança", "Técnico/Agente (área administrativa)", "Bombeiros/Defesa Civil", "Estatais (operações)", "Fiscalização em campo"],
+                steps: ["Defina um alvo claro e um plano simples (sem complicar).", "Inclua 10% do tempo para planejamento semanal.", "Treine teoria aos poucos (resumos + questões)."]
+            }
+        };
+
+        const mixedProfiles = {
+            "AB": { title: "O Educador Organizado", desc: "Você une precisão e empatia. Organiza processos sem perder o lado humano.", suggestions: "Gestão de pessoas, Educação corporativa, Gestão escolar, Projetos sociais.", tip: "Use sua organização para dar estrutura a ambientes muito emocionais." },
+            "AC": { title: "O Arquiteto de Negócios", desc: "Você combina estratégia com análise. Enxerga o destino e calcula a rota com precisão.", suggestions: "Consultoria, Planejamento, Gestão, Carreiras de alto nível no setor público.", tip: "Evite cair em autocobrança excessiva: estratégia também precisa de ritmo." },
+            "BC": { title: "O Líder Inspirador", desc: "Você tem carisma e ambição. Mobiliza pessoas e puxa o time para o alto.", suggestions: "Gestão de times, Comunicação estratégica, Relações institucionais, Liderança pública.", tip: "Traga alguém detalhista para garantir execução consistente." },
+            "BD": { title: "O Guardião Ativo", desc: "Você gosta de ajudar e resolver. Cuida de pessoas com ação prática.", suggestions: "Saúde, Atendimento, Assistência social, Segurança comunitária, Educação prática.", tip: "Crie limites saudáveis para não absorver tudo emocionalmente." },
+            "CD": { title: "O Empreendedor Nato", desc: "Você sonha e faz. É rápido para agir e gosta de desafio.", suggestions: "Gestão operacional, Empreendedorismo, Liderança em campo, Segurança pública (liderança).", tip: "Faça pausas de revisão: velocidade sem direção cansa." },
+            "AD": { title: "O Técnico Executor", desc: "Método + execução. Você planeja bem e entrega com consistência.", suggestions: "TI/DevOps, Qualidade, Operações avançadas, Perícia, Processos e auditoria.", tip: "Trabalhe comunicação para mostrar valor do seu trabalho." }
+        };
+
+        // --- LINKS GRAN ESPECÍFICOS ---
+        const granGuidance = {
+            // Perfis Únicos
+            A: {
+                headline: "Organização e dados: Perfil ideal para Áreas Fiscais e de Gestão.",
+                fac: { label: "Graduação em C. Contábeis", url: "https://granfaculdade.com.br/cursos/graduacao/ciencias-contabeis-bacharelado/" },
+                prep: { label: "Concursos Área Fiscal", url: "https://www.grancursosonline.com.br/cursos/por-concurso/area-fiscal" }
+            },
+            B: {
+                headline: "Comunicação e pessoas: Perfil ideal para Educação e RH.",
+                fac: { label: "Graduação em Pedagogia", url: "https://granfaculdade.com.br/cursos/graduacao/pedagogia-licenciatura/" },
+                prep: { label: "Concursos Área Educação", url: "https://www.grancursosonline.com.br/cursos/por-concurso/area-educacao" }
+            },
+            C: {
+                headline: "Liderança e estratégia: Perfil ideal para Gestão e Jurídico.",
+                fac: { label: "Graduação em Gestão Pública", url: "https://granfaculdade.com.br/cursos/graduacao/gestao-publica-tecnologo/" },
+                prep: { label: "Carreiras Jurídicas", url: "https://www.grancursosonline.com.br/cursos/por-concurso/carreiras-juridicas" }
+            },
+            D: {
+                headline: "Ação prática: Perfil ideal para Segurança e Operações.",
+                fac: { label: "Graduação Segurança Pública", url: "https://granfaculdade.com.br/cursos/graduacao/seguranca-publica-tecnologo/" },
+                prep: { label: "Carreiras Policiais", url: "https://www.grancursosonline.com.br/cursos/por-concurso/area-policial" }
+            },
+
+            // Perfis Mistos
+            AB: {
+                headline: "Organização com foco humano.",
+                fac: { label: "Graduação em RH", url: "https://granfaculdade.com.br/cursos/graduacao/gestao-de-recursos-humanos-tecnologo/" },
+                prep: { label: "Concursos Administrativos", url: "https://www.grancursosonline.com.br/cursos/por-concurso/area-administrativa" }
+            },
+            AC: {
+                headline: "Estratégia baseada em dados.",
+                fac: { label: "Graduação em Administração", url: "https://granfaculdade.com.br/cursos/graduacao/administracao-bacharelado/" },
+                prep: { label: "Área de Controle e Gestão", url: "https://www.grancursosonline.com.br/cursos/por-concurso/area-controle" }
+            },
+            BC: {
+                headline: "Liderança com comunicação.",
+                fac: { label: "Graduação em Marketing", url: "https://granfaculdade.com.br/cursos/graduacao/marketing-tecnologo/" },
+                prep: { label: "Concursos Legislativos", url: "https://www.grancursosonline.com.br/cursos/por-concurso/legislativo" }
+            },
+            BD: {
+                headline: "Cuidado com ação prática.",
+                fac: { label: "Graduação em Criminologia", url: "https://granfaculdade.com.br/cursos/graduacao/criminologia-bacharelado/" },
+                prep: { label: "Concursos Área Saúde", url: "https://www.grancursosonline.com.br/cursos/por-concurso/area-saude" }
+            },
+            CD: {
+                headline: "Execução com ambição de liderança.",
+                fac: { label: "Graduação Proc. Gerenciais", url: "https://granfaculdade.com.br/cursos/graduacao/processos-gerenciais-tecnologo/" },
+                prep: { label: "Carreiras Policiais", url: "https://www.grancursosonline.com.br/cursos/por-concurso/area-policial" }
+            },
+            AD: {
+                headline: "Método e técnica apurada.",
+                fac: { label: "Graduação em T.I.", url: "https://granfaculdade.com.br/cursos/graduacao/analise-e-desenvolvimento-de-sistemas-tecnologo/" },
+                prep: { label: "Concursos de T.I.", url: "https://www.grancursosonline.com.br/cursos/por-concurso/tecnologia-da-informacao" }
+            }
+        };
+
+        // --- ESTADO DA APLICAÇÃO ---
+        let currentQuestionIndex = 0;
+        let scores = { A: 0, B: 0, C: 0, D: 0 };
+        let isTieBreaker = false;
+
+        // --- ELEMENTOS DOM ---
+        const startScreen = document.getElementById("start-screen");
+        const quizScreen = document.getElementById("quiz-screen");
+        const loadingScreen = document.getElementById("loading-screen");
+        const resultScreen = document.getElementById("result-screen");
+        const mixedResultScreen = document.getElementById("mixed-result-screen");
+        const progressBar = document.getElementById("progress-bar");
+        const progressContainer = document.getElementById("progress-container");
+
+        // --- FUNÇÕES ---
+        function startTest() {
+            startScreen.classList.add("hidden");
+            quizScreen.classList.remove("hidden");
+            quizScreen.classList.add("flex");
+            progressContainer.classList.remove("hidden");
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = isTieBreaker ? tieBreakerQuestion : questions[currentQuestionIndex];
+
+            // Update text
+            document.getElementById("question-number").innerText = isTieBreaker
+                ? "PERGUNTA DE DESEMPATE"
+                : `PERGUNTA ${currentQuestionIndex + 1} DE ${questions.length}`;
+
+            document.getElementById("question-text").innerText = q.text;
+
+            // Update progress (ajuste: acompanha a pergunta atual)
+            const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+            progressBar.style.width = isTieBreaker ? "100%" : `${progress}%`;
+
+            // Render options
+            const container = document.getElementById("options-container");
+            container.innerHTML = "";
+
+            q.options.forEach((opt) => {
+                const btn = document.createElement("button");
+                btn.className =
+                    "option-card w-full text-left bg-white border-2 border-slate-100 hover:border-brand-red p-4 md:p-5 rounded-xl transition-all duration-200 group";
+                btn.onclick = () => handleAnswer(opt.id);
+
+                btn.innerHTML = `
+                  <div class="flex items-start">
+                    <div class="flex-shrink-0 mt-0.5 w-6 h-6 rounded-full border-2 border-slate-300 group-hover:border-brand-red mr-4 flex items-center justify-center">
+                      <div class="w-2.5 h-2.5 rounded-full bg-brand-red opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </div>
+                    <span class="text-slate-700 font-medium text-lg">${opt.text}</span>
+                  </div>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(choice) {
+            scores[choice]++;
+
+            if (isTieBreaker) {
+                finishTest();
+                return;
+            }
+
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex < questions.length) {
+                renderQuestion();
+            } else {
+                checkTieOrFinish();
+            }
+        }
+
+        function checkTieOrFinish() {
+            const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            const first = sorted[0];
+            const second = sorted[1];
+            const third = sorted[2];
+
+            // Triple tie => tie breaker
+            if (first[1] === second[1] && second[1] === third[1]) {
+                isTieBreaker = true;
+                renderQuestion();
+            } else {
+                finishTest();
+            }
+        }
+
+        function finishTest() {
+            quizScreen.classList.add("hidden");
+            quizScreen.classList.remove("flex");
+            progressContainer.classList.add("hidden");
+
+            loadingScreen.classList.remove("hidden");
+            loadingScreen.classList.add("flex");
+
+            setTimeout(() => {
+                loadingScreen.classList.add("hidden");
+                loadingScreen.classList.remove("flex");
+                showResult();
+            }, 1200);
+        }
+
+        function showResult() {
+            const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            const winner = sorted[0];
+            const runnerUp = sorted[1];
+
+            if (winner[1] === runnerUp[1]) {
+                const mixedKey = [winner[0], runnerUp[0]].sort().join("");
+                renderMixedResult(mixedKey);
+            } else {
+                renderSingleResult(winner[0]);
+            }
+        }
+
+        function renderSingleResult(profileKey) {
+            const data = profiles[profileKey];
+            resultScreen.classList.remove("hidden");
+
+            document.getElementById("result-title").innerText = data.title;
+            document.getElementById("result-desc").innerText = data.desc;
+
+            fillList("result-strengths", data.strengths);
+            fillList("result-risks", data.risks);
+            fillList("result-private", data.private);
+            fillList("result-public", data.public);
+            fillList("result-steps", data.steps);
+
+            // CTA Gran (perfil único)
+            applyGranGuidanceSingle(profileKey);
+        }
+
+        function renderMixedResult(mixedKey) {
+            let data = mixedProfiles[mixedKey];
+
+            // fallback
+            if (!data) {
+                data = { title: "Perfil Multipotencial", desc: "Você possui um equilíbrio raro entre características distintas.", suggestions: "Áreas de gestão e operação.", tip: "Use sua versatilidade a seu favor." };
+            }
+
+            mixedResultScreen.classList.remove("hidden");
+            document.getElementById("mixed-title").innerText = data.title;
+            document.getElementById("mixed-desc").innerText = data.desc;
+            document.getElementById("mixed-suggestions").innerText = data.suggestions;
+            document.getElementById("mixed-tip").innerText = `"${data.tip}"`;
+
+            // CTA Gran (misto)
+            applyGranGuidanceMixed(mixedKey);
+        }
+
+        function fillList(elementId, items) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = "";
+            items.forEach((item) => {
+                const li = document.createElement("li");
+                li.innerText = item;
+                el.appendChild(li);
+            });
+        }
+
+        // --- GRAN GUIDANCE: Aplicação no resultado ---
+        function applyGranGuidanceSingle(profileKey) {
+            const g = granGuidance[profileKey];
+            
+            // Texto principal
+            document.getElementById("gran-cta-text").innerText = g ? g.headline : "Confira opções de estudo.";
+
+            // Botão Faculdade
+            const btnFac = document.getElementById("gran-btn-fac");
+            const lblFac = document.getElementById("gran-label-fac");
+            if(g && g.fac) {
+                btnFac.href = g.fac.url;
+                lblFac.innerText = g.fac.label;
+            } else {
+                btnFac.href = "https://granfaculdade.com.br/";
+                lblFac.innerText = "Ver Graduações";
+            }
+
+            // Botão Concursos
+            const btnPrep = document.getElementById("gran-btn-prep");
+            const lblPrep = document.getElementById("gran-label-prep");
+             if(g && g.prep) {
+                btnPrep.href = g.prep.url;
+                lblPrep.innerText = g.prep.label;
+            } else {
+                btnPrep.href = "https://www.grancursosonline.com.br/";
+                lblPrep.innerText = "Ver Concursos";
+            }
+        }
+
+        function applyGranGuidanceMixed(mixedKey) {
+            const g = granGuidance[mixedKey];
+            
+            // Texto principal
+            document.getElementById("gran-mixed-text").innerText = g ? g.headline : "Confira opções de estudo.";
+
+            // Botão Faculdade
+            const btnFac = document.getElementById("gran-mixed-btn-fac");
+            const lblFac = document.getElementById("gran-mixed-label-fac");
+            if(g && g.fac) {
+                btnFac.href = g.fac.url;
+                lblFac.innerText = g.fac.label;
+            } else {
+                btnFac.href = "https://granfaculdade.com.br/";
+                lblFac.innerText = "Ver Graduações";
+            }
+
+            // Botão Concursos
+            const btnPrep = document.getElementById("gran-mixed-btn-prep");
+            const lblPrep = document.getElementById("gran-mixed-label-prep");
+             if(g && g.prep) {
+                btnPrep.href = g.prep.url;
+                lblPrep.innerText = g.prep.label;
+            } else {
+                btnPrep.href = "https://www.grancursosonline.com.br/";
+                lblPrep.innerText = "Ver Concursos";
+            }
+        }
+    </script>
+</body>
+</html>
